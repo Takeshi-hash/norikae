@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>交通費計算ツール（CSVパース強化版）</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; }
+    label, select, input { margin: 0.5em 0; }
+    .row { margin-bottom: 1em; }
+    .facility { color: #555; font-size: 0.9em; }
+  </style>
+  <!-- PapaParseのCDN（CSVパーサ） -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+</head>
+<body>
+  <h1>根岸発 交通費計算ツール（スプレッドシートCSV対応）</h1>
+  <div class="row">
+    <label>到着駅：
+      <select id="toStation"></select>
+    </label>
+  </div>
+  <div class="row">
+    <label>片道金額（円）：
+      <input type="number" id="fareInput" readonly>
+    </label>
+    <label>往復金額（円）：
+      <input type="number" id="roundFareInput" readonly>
+    </label>
+  </div>
+  <div class="row facility" id="facilityInfo"></div>
+  <div class="row">
+    <button onclick="addRoute()">区間を追加</button>
+  </div>
+  <div id="routes"></div>
+  <div class="row">
+    <strong>合計（片道）：<span id="totalFare">0</span> 円　
+    合計（往復）：<span id="totalRoundFare">0</span> 円</strong>
+  </div>
+
+  <script>
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRn6vLUs2FmbnirI0FT8gmbMjdA54nVSH9tEKogcfQjS-4LEKAwNeXpC0xp9TXMtinJol4naC04DXy1/pub?gid=0&single=true&output=csv";
+    let fareData = [];
+    let routeList = [];
+
+    fetch(CSV_URL)
+      .then(response => response.text())
+      .then(text => {
+        // PapaParseで解析
+        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+        // ["路線","出発","到着","","片道","主要な施設"]
+        fareData = parsed.data.map(row => ({
+          to: row["到着"],
+          fare: Number(row["片道"]),
+          facility: (row["主要な施設"] || "").replace(/^（|）$/g, '')
+        })).filter(item => item.to && !isNaN(item.fare));
+        setupSelect();
+      });
+
+    function setupSelect() {
+      const select = document.getElementById('toStation');
+      select.innerHTML = '<option value="">選択してください</option>';
+      fareData.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.to;
+        opt.textContent = `${item.to}（${item.facility}）`;
+        select.appendChild(opt);
+      });
+      const optOther = document.createElement('option');
+      optOther.value = 'other';
+      optOther.textContent = 'その他（手入力）';
+      select.appendChild(optOther);
+
+      select.onchange = showFare;
+    }
+
+    function showFare() {
+      const select = document.getElementById('toStation');
+      const val = select.value;
+      const input = document.getElementById('fareInput');
+      const roundInput = document.getElementById('roundFareInput');
+      const facilityDiv = document.getElementById('facilityInfo');
+      if (val === "other") {
+        input.value = "";
+        input.readOnly = false;
+        roundInput.value = "";
+        roundInput.readOnly = false;
+        facilityDiv.textContent = "";
+      } else {
+        const found = fareData.find(item => item.to === val);
+        if (found) {
+          input.value = found.fare;
+          input.readOnly = true;
+          roundInput.value = found.fare * 2;
+          roundInput.readOnly = true;
+          facilityDiv.textContent = `主要な施設：${found.facility}`;
+        } else {
+          input.value = "";
+          input.readOnly = false;
+          roundInput.value = "";
+          roundInput.readOnly = false;
+          facilityDiv.textContent = "";
+        }
+      }
+    }
+
+    function addRoute() {
+      const select = document.getElementById('toStation');
+      const station = select.value;
+      let fare = parseInt(document.getElementById('fareInput').value, 10);
+      let roundFare = parseInt(document.getElementById('roundFareInput').value, 10);
+      if (!station || isNaN(fare) || isNaN(roundFare)) {
+        alert("到着駅と金額を入力してください。");
+        return;
+      }
+      const facility = (station === "other") ? "" : 
+        (fareData.find(item => item.to === station) || {}).facility || "";
+      routeList.push({ to: station, fare: fare, roundFare: roundFare, facility: facility });
+      updateRoutes();
+      // フォーム初期化
+      select.value = "";
+      document.getElementById('fareInput').value = "";
+      document.getElementById('roundFareInput').value = "";
+      document.getElementById('facilityInfo').textContent = "";
+    }
+
+    function updateRoutes() {
+      const div = document.getElementById('routes');
+      div.innerHTML = "";
+      let total = 0;
+      let totalRound = 0;
+      routeList.forEach((item, idx) => {
+        total += item.fare;
+        totalRound += item.roundFare;
+        const p = document.createElement('div');
+        p.className = "route-item";
+        p.textContent = `区間${idx + 1}: 根岸 → ${item.to}（${item.facility}）: 片道${item.fare}円 / 往復${item.roundFare}円`;
+        div.appendChild(p);
+      });
+      document.getElementById('totalFare').textContent = total;
+      document.getElementById('totalRoundFare').textContent = totalRound;
+    }
+  </script>
+</body>
+</html>
