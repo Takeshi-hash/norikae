@@ -11,11 +11,7 @@ const SHEET_NAME = 'シート1';
 function doOptions(e) {
   return ContentService
     .createTextOutput('')
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type')
-    .setHeader('Access-Control-Max-Age', '86400');
+    .setMimeType(ContentService.MimeType.TEXT);
 }
 
 /**
@@ -39,7 +35,11 @@ function doPost(e) {
     console.log('doPost called');
     console.log('e.postData:', e.postData);
     console.log('e.postData.contents:', e.postData ? e.postData.contents : 'N/A');
-    
+
+    if (!e || !e.postData || !e.postData.contents) {
+      return createResponse({ error: 'Request body is required' }, 400);
+    }
+
     const data = JSON.parse(e.postData.contents);
     console.log('Parsed data:', data);
     console.log('Action:', data.action);
@@ -243,8 +243,8 @@ function fetchFareFromJorudan(from, to) {
  * CORS対応レスポンス生成
  */
 function createResponse(data, statusCode = 200) {
-  const output = ContentService.createTextOutput(JSON.stringify(data));
+  const payload = Object.assign({ statusCode: statusCode }, data);
+  const output = ContentService.createTextOutput(JSON.stringify(payload));
   output.setMimeType(ContentService.MimeType.JSON);
-  output.setHeader('Access-Control-Allow-Origin', '*');
   return output;
 }
