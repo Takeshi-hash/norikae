@@ -2,7 +2,7 @@
 // デプロイ方法: 拡張機能 → Apps Script → 新しいプロジェクト → このコードを貼り付け → デプロイ
 
 // スプレッドシートID（.envから取得していたものをここに直接記述）
-const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
+const SPREADSHEET_ID = '1Rsk1IH9U_3J2LJlHfE2_RWbNLGrQ1fFGq7_BjcbJx-U';
 const SHEET_NAME = 'シート1';
 
 /**
