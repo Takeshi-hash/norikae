@@ -1,0 +1,17 @@
+#!/bin/bash
+# Norikae App Launcher
+# このスクリプトはカスタムURLスキーム norikae:// から起動されます
+
+# プロジェクトディレクトリに移動
+cd "$(dirname "$0")/../../../" || exit 1
+
+# サーバーが既に起動しているかチェック
+if curl -s http://localhost:3000/ > /dev/null 2>&1; then
+    # 既に起動中なら管理画面を開くだけ
+    open "http://localhost:3000/admin.html"
+else
+    # サーバーを起動して管理画面を開く
+    npm start &
+    sleep 2
+    open "http://localhost:3000/admin.html"
+fi

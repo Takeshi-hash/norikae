@@ -80,20 +80,25 @@
   <div id="adminPanel"
     style="display: none; border: 2px solid #28a745; padding: 1em; margin: 1em 0; background: #f0fff4; border-radius: 8px;">
     <h3 style="margin-top: 0;">駅の追加・削除</h3>
-    <p style="color: #555;">
-      駅の追加・削除には<strong>ローカルサーバー</strong>が必要です。<br>
-      以下の手順で作業してください：
-    </p>
-    <ol style="color: #555; margin: 1em 0;">
-      <li>ターミナルで <code>npm start</code> を実行</li>
-      <li><a href="http://localhost:3000/admin.html" target="_blank"
-          style="color: #007bff;">http://localhost:3000/admin.html</a> を開く</li>
-      <li>駅を追加・削除</li>
-      <li>作業完了後、ターミナルを閉じる</li>
-    </ol>
-    <p style="font-size: 0.9em; color: #888;">
-      ℹ️ または <code>norikae_app.command</code> をダブルクリックすると自動で起動します。
-    </p>
+
+    <!-- ワンクリック起動ボタン -->
+    <div style="margin-bottom: 1em;">
+      <a href="norikae://start"
+        style="display: inline-block; background: #28a745; color: white; padding: 0.8em 1.5em; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 1.1em;">
+        🚀 管理ツールを起動
+      </a>
+    </div>
+
+    <details style="margin-top: 1em; color: #666;">
+      <summary style="cursor: pointer;">手動で起動する場合</summary>
+      <ol style="margin: 0.5em 0;">
+        <li>ターミナルで <code>npm start</code> を実行</li>
+        <li><a href="http://localhost:3000/admin.html" target="_blank">http://localhost:3000/admin.html</a> を開く</li>
+      </ol>
+      <p style="font-size: 0.9em; color: #888;">
+        ※ 初回は <code>NorikaeApp.app</code> をダブルクリックしてURLスキームを登録してください
+      </p>
+    </details>
   </div>
 
   <div class="row">
