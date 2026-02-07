@@ -71,10 +71,20 @@
 <body>
   <h1>根岸発 交通費計算ツール</h1>
 
-  <!-- 管理モード切替 -->
-  <div class="row">
+  <!-- 管理モード切替（macOSデスクトップのみ表示） -->
+  <div class="row" id="adminButtonRow" style="display: none;">
     <button onclick="toggleAdmin()" style="background: #6c757d;">🔧 管理モード</button>
   </div>
+  <script>
+    // macOSのデスクトップブラウザでのみ管理ボタンを表示
+    (function () {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const isDesktop = !/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMac && isDesktop) {
+        document.getElementById('adminButtonRow').style.display = 'block';
+      }
+    })();
+  </script>
 
   <!-- 管理UI（初期状態は非表示） -->
   <div id="adminPanel"
