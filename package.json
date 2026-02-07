@@ -1,0 +1,24 @@
+{
+  "name": "norikae",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "fetch": "node src/index.js",
+    "serve": "npx serve .",
+    "add": "node src/add_route.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "csv-parse": "^6.1.0",
+    "dotenv": "^17.2.4",
+    "express": "^5.2.1",
+    "googleapis": "^171.4.0",
+    "japan-transfer-mcp": "^0.0.11",
+    "luxon": "^3.7.2"
+  }
+}

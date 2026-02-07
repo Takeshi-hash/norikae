@@ -36,17 +36,28 @@ function doGet(e) {
  */
 function doPost(e) {
   try {
+    console.log('doPost called');
+    console.log('e.postData:', e.postData);
+    console.log('e.postData.contents:', e.postData ? e.postData.contents : 'N/A');
+    
     const data = JSON.parse(e.postData.contents);
+    console.log('Parsed data:', data);
+    console.log('Action:', data.action);
+    
     const action = data.action;
     
     if (action === 'addStation') {
+      console.log('Calling addStation with:', data.station, data.routeName);
       return addStation(data.station, data.routeName);
     } else if (action === 'deleteStation') {
+      console.log('Calling deleteStation with:', data.station);
       return deleteStation(data.station);
     }
     
+    console.log('Unknown action:', action);
     return createResponse({ error: 'Unknown action' }, 400);
   } catch (error) {
+    console.error('doPost error:', error);
     return createResponse({ error: error.toString() }, 500);
   }
 }
@@ -160,6 +171,8 @@ function deleteStation(stationName) {
  */
 function fetchFareFromJorudan(from, to) {
   try {
+    console.log(`fetchFareFromJorudan called: from=${from}, to=${to}`);
+    
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
@@ -180,6 +193,8 @@ function fetchFareFromJorudan(from, to) {
       `&Cfp=1` + // ICカード優先
       `&Czu=2`; // 料金順
     
+    console.log('Jorudan URL:', url);
+    
     const response = UrlFetchApp.fetch(url, {
       muteHttpExceptions: true,
       headers: {
@@ -187,28 +202,39 @@ function fetchFareFromJorudan(from, to) {
       }
     });
     
+    console.log('Jorudan response status:', response.getResponseCode());
+    
     const html = response.getContentText('Shift_JIS');
+    console.log('HTML length:', html.length);
+    console.log('HTML preview (first 1000 chars):', html.substring(0, 1000));
     
     // 運賃を正規表現で抽出
     // 例: <td class="fare">440円</td>
     const fareMatch = html.match(/class="fare[^"]*">([0-9,]+)円/);
+    console.log('fareMatch result:', fareMatch);
     
     if (fareMatch && fareMatch[1]) {
       const fare = parseInt(fareMatch[1].replace(/,/g, ''), 10);
+      console.log('Found fare:', fare);
       return fare;
     }
     
     // 別パターンも試す
     const fareMatch2 = html.match(/運賃[：:]\s*([0-9,]+)円/);
+    console.log('fareMatch2 result:', fareMatch2);
+    
     if (fareMatch2 && fareMatch2[1]) {
       const fare = parseInt(fareMatch2[1].replace(/,/g, ''), 10);
+      console.log('Found fare (pattern 2):', fare);
       return fare;
     }
     
-    Logger.log('運賃が見つかりませんでした: ' + html.substring(0, 500));
+    console.error('運賃が見つかりませんでした');
+    console.log('HTML full content:', html);
     return null;
   } catch (error) {
-    Logger.log('ジョルダンスクレイピングエラー: ' + error.toString());
+    console.error('ジョルダンスクレイピングエラー:', error.toString());
+    console.error('Error stack:', error.stack);
     return null;
   }
 }

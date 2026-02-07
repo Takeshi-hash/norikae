@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交通費ツール管理画面</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 2em;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .section {
+            border: 1px solid #ddd;
+            padding: 1.5em;
+            margin: 1.5em 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .section h2 {
+            margin-top: 0;
+            font-size: 1.2em;
+            color: #555;
+        }
+
+        label {
+            display: block;
+            margin: 0.5em 0;
+        }
+
+        input[type="text"] {
+            padding: 0.5em;
+            width: 300px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 0.6em 1.2em;
+            font-size: 1em;
+            cursor: pointer;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            margin-top: 0.5em;
+        }
+
+        button:hover {
+            background: #218838;
+        }
+
+        button.delete {
+            background: #dc3545;
+            padding: 0.4em 0.8em;
+            font-size: 0.9em;
+        }
+
+        button.delete:hover {
+            background: #c82333;
+        }
+
+        #addStatus {
+            margin-left: 1em;
+            font-weight: bold;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            padding: 0.5em;
+            margin: 0.5em 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .station-name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .route-info {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔧 交通費ツール管理画面</h1>
+    <p style="color: #666;">駅の追加・削除を行います。普段の利用は <a href="index.html">index.html</a> をブックマークしてご利用ください。</p>
+
+    <!-- 新規駅追加 -->
+    <div class="section">
+        <h2>➕ 新規駅を追加</h2>
+        <label>
+            到着駅：
+            <input type="text" id="newStationName" placeholder="例: 品川">
+        </label>
+        <label>
+            路線名（任意）：
+            <input type="text" id="newRouteName" placeholder="例: JR">
+        </label>
+        <button onclick="addNewRoute()">追加して更新</button>
+        <span id="addStatus"></span>
+        <p style="margin-top: 1em; font-size: 0.9em; color: #888;">
+            ℹ️ ジョルダンから運賃を取得し、Google Sheetsに記録します（10秒程度かかります）
+        </p>
+    </div>
+
+    <!-- 登録済み駅一覧 -->
+    <div class="section">
+        <h2>📋 登録済み駅一覧</h2>
+        <ul id="routesList">
+            <li>読み込み中...</li>
+        </ul>
+    </div>
+
+    <script>
+        // 初期ロード時に登録済み駅を取得
+        window.addEventListener('DOMContentLoaded', fetchRoutes);
+
+        function fetchRoutes() {
+            fetch('/api/routes')
+                .then(res => {
+                    if (!res.ok) throw new Error('Failed to fetch routes');
+                    return res.json();
+                })
+                .then(routes => {
+                    const list = document.getElementById('routesList');
+                    list.innerHTML = '';
+
+                    if (routes.length === 0) {
+                        const emptyLi = document.createElement('li');
+                        emptyLi.style.color = '#888';
+                        emptyLi.textContent = '登録済みの駅はありません';
+                        list.appendChild(emptyLi);
+                        return;
+                    }
+
+                    routes.forEach(route => {
+                        const li = document.createElement('li');
+
+                        // P2: XSS対策 - textContent + DOM生成で安全に要素を作成
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'delete';
+                        deleteBtn.textContent = '削除';
+                        deleteBtn.addEventListener('click', () => deleteRoute(route.id));
+
+                        const stationSpan = document.createElement('span');
+                        stationSpan.className = 'station-name';
+                        stationSpan.textContent = route.to;
+
+                        const routeSpan = document.createElement('span');
+                        routeSpan.className = 'route-info';
+                        routeSpan.textContent = `(${route.route_name})`;
+
+                        li.appendChild(deleteBtn);
+                        li.appendChild(document.createTextNode(' '));
+                        li.appendChild(stationSpan);
+                        li.appendChild(document.createTextNode(' '));
+                        li.appendChild(routeSpan);
+
+                        list.appendChild(li);
+                    });
+                })
+                .catch(err => {
+                    console.error('Error fetching routes:', err);
+                    const list = document.getElementById('routesList');
+                    list.innerHTML = '';
+                    const errorLi = document.createElement('li');
+                    errorLi.style.color = 'red';
+                    errorLi.textContent = 'エラー: サーバーに接続できません';
+                    list.appendChild(errorLi);
+                });
+        }
+
+        function addNewRoute() {
+            const station = document.getElementById('newStationName').value.trim();
+            const routeName = document.getElementById('newRouteName').value.trim();
+            const statusSpan = document.getElementById('addStatus');
+
+            if (!station) {
+                alert('到着駅を入力してください');
+                return;
+            }
+
+            statusSpan.textContent = '処理中...（10秒ほどかかります）';
+            statusSpan.style.color = 'blue';
+
+            fetch('/api/routes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ toStation: station, routeName: routeName })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        statusSpan.textContent = '✅ 完了！';
+                        statusSpan.style.color = 'green';
+                        // フォームクリア
+                        document.getElementById('newStationName').value = '';
+                        document.getElementById('newRouteName').value = '';
+                        // 一覧更新
+                        setTimeout(() => {
+                            fetchRoutes();
+                            statusSpan.textContent = '';
+                        }, 1500);
+                    } else {
+                        statusSpan.textContent = '❌ エラー: ' + (data.error || '不明なエラー');
+                        statusSpan.style.color = 'red';
+                    }
+                })
+                .catch(err => {
+                    statusSpan.textContent = '❌ 通信エラー';
+                    statusSpan.style.color = 'red';
+                    console.error(err);
+                });
+        }
+
+        function deleteRoute(id) {
+            if (!confirm('本当にこの駅を削除しますか？\n\n⚠️ Google Sheetsからも該当する記録がすべて削除されます。')) {
+                return;
+            }
+
+            fetch(`/api/routes/${id}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('✅ 削除しました');
+                        fetchRoutes();
+                    } else {
+                        alert('❌ エラー: ' + (data.error || '不明なエラー'));
+                    }
+                })
+                .catch(err => {
+                    alert('❌ 通信エラー');
+                    console.error(err);
+                });
+        }
+    </script>
+</body>
+
+</html>

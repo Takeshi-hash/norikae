@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>根岸発 交通費計算ツール</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 1em;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.5em;
+      margin-bottom: 1em;
+    }
+
+    label,
+    select,
+    input {
+      margin: 0.5em 0;
+    }
+
+    .row {
+      margin-bottom: 1em;
+    }
+
+    .facility {
+      color: #555;
+      font-size: 0.9em;
+    }
+
+    button {
+      padding: 0.5em 1em;
+      font-size: 1em;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .route-item {
+      padding: 0.5em;
+      margin: 0.5em 0;
+      background: #f8f9fa;
+      border-left: 3px solid #007bff;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 0.5em;
+      }
+
+      h1 {
+        font-size: 1.2em;
+      }
+    }
+  </style>
+  <!-- PapaParseのCDN（CSVパーサ） -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+</head>
+
+<body>
+  <h1>根岸発 交通費計算ツール</h1>
+
+  <!-- 管理モード切替 -->
+  <div class="row">
+    <button onclick="toggleAdmin()" style="background: #6c757d;">🔧 管理モード</button>
+  </div>
+
+  <!-- 管理UI（初期状態は非表示） -->
+  <div id="adminPanel"
+    style="display: none; border: 2px solid #28a745; padding: 1em; margin: 1em 0; background: #f0fff4; border-radius: 8px;">
+    <h3 style="margin-top: 0;">駅の追加・削除</h3>
+    <div class="row">
+      <label>追加する駅名：
+        <input type="text" id="newStationInput" placeholder="例: 品川">
+      </label>
+      <button onclick="addStationViaGAS()" style="background: #28a745;">➕ 駅を追加</button>
+      <span id="addStatus" style="margin-left: 1em; font-weight: bold;"></span>
+    </div>
+    <div class="row" style="margin-top: 1em;">
+      <strong>登録済み駅一覧:</strong>
+      <div id="stationList" style="margin-top: 0.5em;"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <label>到着駅：
+      <select id="toStation"></select>
+    </label>
+  </div>
+  <div class="row">
+    <label>片道金額（円）：
+      <input type="number" id="fareInput" readonly>
+    </label>
+    <label>往復金額（円）：
+      <input type="number" id="roundFareInput" readonly>
+    </label>
+  </div>
+  <div class="row facility" id="facilityInfo"></div>
+
+  <div class="row">
+    <button onclick="addRoute()">区間を追加</button>
+  </div>
+  <div id="routes"></div>
+  <div class="row">
+    <strong>合計（片道）：<span id="totalFare">0</span> 円　
+      合計（往復）：<span id="totalRoundFare">0</span> 円</strong>
+  </div>
+
+  <script>
+    // Google Apps Script デプロイURL
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxcziDuBKMc4NutW7fKcl-jjSfX9ZpwZ_O-r_oiD__8yzZ41AFw8H2MOdY93qJyt-POQw/exec";
+
+    let fareData = [];
+    let routeList = [];
+
+    // Google Sheets公開CSVを直接読み込み
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQGEHOeXmRZ9ozOakzu76h3e2c8TaA7e8p8wTTpRy_NkwoKhqBNXk1joES3kfZR9xWOp-u2o3CVJ8nx/pub?gid=0&single=true&output=csv";
+
+    Papa.parse(CSV_URL, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: function (results) {
+        fareData = results.data.map(row => ({
+          to: row["到着"],
+          fare: Number(row["片道"]),
+          facility: (row["主要な施設"] || "").replace(/^（|）$/g, '')
+        })).filter(item => item.to && !isNaN(item.fare));
+
+        setupSelect();
+      },
+      error: function (error) {
+        console.error('CSV読み込みエラー:', error);
+        alert('データの読み込みに失敗しました。');
+      }
+    });
+
+    function setupSelect() {
+      const select = document.getElementById('toStation');
+      select.innerHTML = '<option value="">選択してください</option>';
+      fareData.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.to;
+        opt.textContent = `${item.to}（${item.facility}）`;
+        select.appendChild(opt);
+      });
+      const optOther = document.createElement('option');
+      optOther.value = 'other';
+      optOther.textContent = 'その他（手入力）';
+      select.appendChild(optOther);
+
+      select.onchange = showFare;
+    }
+
+    function showFare() {
+      const select = document.getElementById('toStation');
+      const val = select.value;
+      const input = document.getElementById('fareInput');
+      const roundInput = document.getElementById('roundFareInput');
+      const facilityDiv = document.getElementById('facilityInfo');
+      if (val === "other") {
+        input.value = "";
+        input.readOnly = false;
+        roundInput.value = "";
+        roundInput.readOnly = false;
+        facilityDiv.textContent = "";
+      } else {
+        const found = fareData.find(item => item.to === val);
+        if (found) {
+          input.value = found.fare;
+          input.readOnly = true;
+          roundInput.value = found.fare * 2;
+          roundInput.readOnly = true;
+          facilityDiv.textContent = `主要な施設：${found.facility}`;
+        } else {
+          input.value = "";
+          input.readOnly = false;
+          roundInput.value = "";
+          roundInput.readOnly = false;
+          facilityDiv.textContent = "";
+        }
+      }
+    }
+
+    function addRoute() {
+      const select = document.getElementById('toStation');
+      const station = select.value;
+      let fare = parseInt(document.getElementById('fareInput').value, 10);
+      let roundFare = parseInt(document.getElementById('roundFareInput').value, 10);
+      if (!station || isNaN(fare) || isNaN(roundFare)) {
+        alert("到着駅と金額を入力してください。");
+        return;
+      }
+      const facility = (station === "other") ? "" :
+        (fareData.find(item => item.to === station) || {}).facility || "";
+      routeList.push({ to: station, fare: fare, roundFare: roundFare, facility: facility });
+      updateRoutes();
+      // フォーム初期化
+      select.value = "";
+      document.getElementById('fareInput').value = "";
+      document.getElementById('roundFareInput').value = "";
+      document.getElementById('facilityInfo').textContent = "";
+    }
+
+    function updateRoutes() {
+      const div = document.getElementById('routes');
+      div.innerHTML = "";
+      let total = 0;
+      let totalRound = 0;
+      routeList.forEach((item, idx) => {
+        total += item.fare;
+        totalRound += item.roundFare;
+        const p = document.createElement('div');
+        p.className = "route-item";
+        p.textContent = `区間${idx + 1}: 根岸 → ${item.to}（${item.facility}）: 片道${item.fare}円 / 往復${item.roundFare}円`;
+        div.appendChild(p);
+      });
+      document.getElementById('totalFare').textContent = total;
+      document.getElementById('totalRoundFare').textContent = totalRound;
+    }
+
+    // === 管理機能 ===
+    function toggleAdmin() {
+      const panel = document.getElementById('adminPanel');
+      if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        loadStationList();
+      } else {
+        panel.style.display = 'none';
+      }
+    }
+
+    async function addStationViaGAS() {
+      const stationName = document.getElementById('newStationInput').value.trim();
+      const statusSpan = document.getElementById('addStatus');
+
+      if (!stationName) {
+        alert('駅名を入力してください');
+        return;
+      }
+
+      if (GAS_API_URL === 'YOUR_GAS_DEPLOYMENT_URL_HERE') {
+        alert('Google Apps ScriptのデプロイURLを設定してください。\ngas/README.mdを参照してください。');
+        return;
+      }
+
+      statusSpan.textContent = '処理中...（数秒かかります）';
+      statusSpan.style.color = 'blue';
+
+      try {
+        const response = await fetch(GAS_API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'addStation',
+            station: stationName
+          })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          statusSpan.textContent = '✅ 完了！';
+          statusSpan.style.color = 'green';
+          document.getElementById('newStationInput').value = '';
+          setTimeout(() => location.reload(), 1500);
+        } else {
+          statusSpan.textContent = '❌ エラー: ' + (result.error || '不明');
+          statusSpan.style.color = 'red';
+        }
+      } catch (error) {
+        statusSpan.textContent = '❌ エラー: ' + error.message;
+        statusSpan.style.color = 'red';
+      }
+    }
+
+    async function loadStationList() {
+      const listDiv = document.getElementById('stationList');
+      listDiv.innerHTML = '<p>読み込み中...</p>';
+
+      // 公開CSVから駅一覧を取得（fare Dataから重複除去）
+      const uniqueStations = [...new Set(fareData.map(item => item.to))];
+
+      listDiv.innerHTML = '';
+      uniqueStations.forEach(station => {
+        const div = document.createElement('div');
+        div.style.padding = '0.5em';
+        div.style.margin = '0.3em 0';
+        div.style.background = 'white';
+        div.style.border = '1px solid #ddd';
+        div.style.borderRadius = '4px';
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '削除';
+        deleteBtn.style.background = '#dc3545';
+        deleteBtn.style.color = 'white';
+        deleteBtn.style.padding = '0.3em 0.6em';
+        deleteBtn.style.fontSize = '0.9em';
+        deleteBtn.style.marginRight = '0.5em';
+        deleteBtn.onclick = () => deleteStationViaGAS(station);
+
+        div.appendChild(deleteBtn);
+        div.appendChild(document.createTextNode(station));
+        listDiv.appendChild(div);
+      });
+    }
+
+    async function deleteStationViaGAS(stationName) {
+      if (!confirm(`"${stationName}" を削除しますか？\n\n⚠️ Google Sheetsからもすべて削除されます。`)) {
+        return;
+      }
+
+      if (GAS_API_URL === 'YOUR_GAS_DEPLOYMENT_URL_HERE') {
+        alert('Google Apps ScriptのデプロイURLを設定してください。');
+        return;
+      }
+
+      try {
+        const response = await fetch(GAS_API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'deleteStation',
+            station: stationName
+          })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          alert('✅ 削除しました。ページを再読み込みします。');
+          location.reload();
+        } else {
+          alert('❌ エラー: ' + (result.error || '不明'));
+        }
+      } catch (error) {
+        alert('エラー: ' + error.message);
+      }
+    }
+  </script>
+</body>
+
+</html>
