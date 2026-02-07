@@ -93,10 +93,21 @@
 
     <!-- ワンクリック起動ボタン -->
     <div style="margin-bottom: 1em;">
-      <a href="norikae://start"
+      <a href="norikae://start" onclick="return launchAdmin()"
         style="display: inline-block; background: #28a745; color: white; padding: 0.8em 1.5em; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 1.1em;">
         🚀 管理ツールを起動
       </a>
+      <script>
+        function launchAdmin() {
+          // URLスキームが開けない場合のフォールバック（3秒後にエラー表示）
+          const timeout = setTimeout(function () {
+            alert('⚠️ 管理ツールを起動できませんでした。\n\n考えられる原因:\n• NorikaeApp.appが未登録\n• このMacに開発環境がセットアップされていない\n\n管理者の場合は「手動で起動する場合」を参照してください。');
+          }, 3000);
+          // ページ離脱（アプリ起動成功）したらタイムアウトをキャンセル
+          window.addEventListener('blur', function () { clearTimeout(timeout); }, { once: true });
+          return true; // リンクを通常通り開く
+        }
+      </script>
     </div>
 
     <details style="margin-top: 1em; color: #666;">
