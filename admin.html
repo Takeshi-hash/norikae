@@ -141,6 +141,11 @@
         // 初期ロード時に登録済み駅を取得
         window.addEventListener('DOMContentLoaded', fetchRoutes);
 
+        // タブを閉じる時に自動でサーバー終了
+        window.addEventListener('beforeunload', function () {
+            navigator.sendBeacon('/api/shutdown');
+        });
+
         function fetchRoutes() {
             fetch('/api/routes')
                 .then(res => {
