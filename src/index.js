@@ -98,13 +98,15 @@ async function main() {
 
                 const roundTripFare = fare * 2;
                 const rowData = [
-                    route.route_name, // 路線
+                    route.area || 'その他', // エリア
+                    route.route_name.split(':')[0], // 路線
                     route.from,       // 出発
                     route.to,         // 到着
-                    `${today} ${runId}`, // 備考 (実行日などを入れる)
+                    `${today} ${runId}`, // 備考
                     fare,             // 片道
                     roundTripFare,    // 往復
-                    ''                // 主要な施設 (手動入力用にあけておく、またはroute.facilityがあれば入れる)
+                    route.facility || '', // 主要な施設
+                    new Date().toISOString() // 作成日時
                 ];
 
                 try {

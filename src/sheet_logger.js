@@ -4,7 +4,7 @@ import { GoogleAuth } from 'google-auth-library';
 /**
  * Google Sheetに行を追加する
  * @param {string} spreadsheetId
- * @param {Array<string|number>} rowData [路線, 出発, 到着, 備考, 片道, 往復, 主要な施設]
+ * @param {Array<string|number>} rowData [エリア, 路線, 出発, 到着, 備考, 片道, 往復, 主要な施設, 作成日時]
  */
 export async function appendRow(spreadsheetId, rowData) {
     const auth = new GoogleAuth({
@@ -70,7 +70,7 @@ export async function deleteRowsByDestination(spreadsheetId, destination) {
         // 1. シート全体のデータを取得
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: `${SHEET_NAME}!A:H`,
+            range: `${SHEET_NAME}!A:I`,
         });
 
         const rows = response.data.values;
@@ -79,11 +79,11 @@ export async function deleteRowsByDestination(spreadsheetId, destination) {
             return;
         }
 
-        // 2. 削除対象の行番号を特定（逆順で処理するため降順ソート）
+        // 2. 削除対象の行番号を特定
         const rowsToDelete = [];
         rows.forEach((row, index) => {
-            // row[2] が「到着」列（0-indexed で 2番目）
-            if (row[2] === destination) {
+            // row[3] が「到着」列（0-indexed で 3番目、Aがエリアになったため）
+            if (row[3] === destination) {
                 rowsToDelete.push(index);
             }
         });
@@ -95,12 +95,11 @@ export async function deleteRowsByDestination(spreadsheetId, destination) {
 
         console.log(`Found ${rowsToDelete.length} rows to delete for destination: ${destination}`);
 
-        // 3. 行を削除（逆順で削除しないとインデックスがずれる）
-        // batchUpdateを使って一括削除
+        // 3. 行を削除
         const requests = rowsToDelete.reverse().map(rowIndex => ({
             deleteDimension: {
                 range: {
-                    sheetId: sheetId, // 動的に取得したsheetIdを使用
+                    sheetId: sheetId,
                     dimension: 'ROWS',
                     startIndex: rowIndex,
                     endIndex: rowIndex + 1

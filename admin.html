@@ -119,8 +119,16 @@
             <input type="text" id="newStationName" placeholder="例: 品川">
         </label>
         <label>
-            路線名（任意）：
-            <input type="text" id="newRouteName" placeholder="例: JR">
+            エリア：
+            <select id="newArea">
+                <option value="主要ターミナル">主要ターミナル</option>
+                <option value="渋谷・新宿・池袋">渋谷・新宿・池袋</option>
+                <option value="港区（赤坂・六本木・麻布）">港区（赤坂・六本木・麻布）</option>
+                <option value="千代田・中央オフィス街">千代田・中央オフィス街</option>
+                <option value="中央線・文京エリア">中央線・文京エリア</option>
+                <option value="湾岸エリア">湾岸エリア</option>
+                <option value="その他" selected>その他</option>
+            </select>
         </label>
         <button onclick="addNewRoute()">追加して更新</button>
         <span id="addStatus"></span>
@@ -204,6 +212,7 @@
         function addNewRoute() {
             const station = document.getElementById('newStationName').value.trim();
             const routeName = document.getElementById('newRouteName').value.trim();
+            const area = document.getElementById('newArea').value;
             const statusSpan = document.getElementById('addStatus');
 
             if (!station) {
@@ -217,7 +226,7 @@
             fetch('/api/routes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ toStation: station, routeName: routeName })
+                body: JSON.stringify({ toStation: station, routeName: routeName, area: area })
             })
                 .then(res => res.json())
                 .then(data => {

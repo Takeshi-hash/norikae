@@ -122,9 +122,16 @@
     </details>
   </div>
 
-  <div class="row">
+  <div class="row" style="display: flex; gap: 10px; align-items: center;">
+    <label>並び順：
+      <select id="sortOrder" onchange="setupSelect()" style="padding: 4px; border-radius: 4px;">
+        <option value="area">エリア順</option>
+        <option value="name_asc">50音（昇順）</option>
+        <option value="name_desc">50音（降順）</option>
+      </select>
+    </label>
     <label>到着駅：
-      <select id="toStation"></select>
+      <select id="toStation" style="padding: 4px; border-radius: 4px; min-width: 200px;"></select>
     </label>
   </div>
   <div class="row">
@@ -159,6 +166,7 @@
       skipEmptyLines: true,
       complete: function (results) {
         fareData = results.data.map(row => ({
+          area: row["エリア"] || 'その他',
           to: row["到着"],
           fare: Number(row["片道"]),
           facility: (row["主要な施設"] || "").replace(/^（|）$/g, '')
@@ -174,8 +182,38 @@
 
     function setupSelect() {
       const select = document.getElementById('toStation');
+      const sortOrder = document.getElementById('sortOrder').value;
+      const currentVal = select.value;
+
+      const areaPriority = [
+        "主要ターミナル",
+        "渋谷・新宿・池袋",
+        "港区（赤坂・六本木・麻布）",
+        "千代田・中央オフィス街",
+        "中央線・文京エリア",
+        "湾岸エリア",
+        "その他"
+      ];
+
+      // ソート実行
+      const sortedData = [...fareData].sort((a, b) => {
+        if (sortOrder === 'area') {
+          const pA = areaPriority.indexOf(a.area);
+          const pB = areaPriority.indexOf(b.area);
+          const weightA = pA === -1 ? 999 : pA;
+          const weightB = pB === -1 ? 999 : pB;
+          if (weightA !== weightB) return weightA - weightB;
+          return a.to.localeCompare(b.to, 'ja');
+        } else if (sortOrder === 'name_asc') {
+          return a.to.localeCompare(b.to, 'ja');
+        } else if (sortOrder === 'name_desc') {
+          return b.to.localeCompare(a.to, 'ja');
+        }
+        return 0;
+      });
+
       select.innerHTML = '<option value="">選択してください</option>';
-      fareData.forEach(item => {
+      sortedData.forEach(item => {
         const opt = document.createElement('option');
         opt.value = item.to;
         opt.textContent = `${item.to}（${item.facility}）`;
@@ -185,6 +223,9 @@
       optOther.value = 'other';
       optOther.textContent = 'その他（手入力）';
       select.appendChild(optOther);
+
+      // 前回の選択を維持
+      if (currentVal) select.value = currentVal;
 
       select.onchange = showFare;
     }
