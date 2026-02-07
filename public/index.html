@@ -80,17 +80,20 @@
   <div id="adminPanel"
     style="display: none; border: 2px solid #28a745; padding: 1em; margin: 1em 0; background: #f0fff4; border-radius: 8px;">
     <h3 style="margin-top: 0;">駅の追加・削除</h3>
-    <div class="row">
-      <label>追加する駅名：
-        <input type="text" id="newStationInput" placeholder="例: 品川">
-      </label>
-      <button onclick="addStationViaGAS()" style="background: #28a745;">➕ 駅を追加</button>
-      <span id="addStatus" style="margin-left: 1em; font-weight: bold;"></span>
-    </div>
-    <div class="row" style="margin-top: 1em;">
-      <strong>登録済み駅一覧:</strong>
-      <div id="stationList" style="margin-top: 0.5em;"></div>
-    </div>
+    <p style="color: #555;">
+      駅の追加・削除には<strong>ローカルサーバー</strong>が必要です。<br>
+      以下の手順で作業してください：
+    </p>
+    <ol style="color: #555; margin: 1em 0;">
+      <li>ターミナルで <code>npm start</code> を実行</li>
+      <li><a href="http://localhost:3000/admin.html" target="_blank"
+          style="color: #007bff;">http://localhost:3000/admin.html</a> を開く</li>
+      <li>駅を追加・削除</li>
+      <li>作業完了後、ターミナルを閉じる</li>
+    </ol>
+    <p style="font-size: 0.9em; color: #888;">
+      ℹ️ または <code>norikae_app.command</code> をダブルクリックすると自動で起動します。
+    </p>
   </div>
 
   <div class="row">
@@ -233,116 +236,7 @@
     // === 管理機能 ===
     function toggleAdmin() {
       const panel = document.getElementById('adminPanel');
-      if (panel.style.display === 'none') {
-        panel.style.display = 'block';
-        loadStationList();
-      } else {
-        panel.style.display = 'none';
-      }
-    }
-
-    async function addStationViaGAS() {
-      const stationName = document.getElementById('newStationInput').value.trim();
-      const statusSpan = document.getElementById('addStatus');
-
-      if (!stationName) {
-        alert('駅名を入力してください');
-        return;
-      }
-
-      if (GAS_API_URL === 'YOUR_GAS_DEPLOYMENT_URL_HERE') {
-        alert('Google Apps ScriptのデプロイURLを設定してください。\ngas/README.mdを参照してください。');
-        return;
-      }
-
-      statusSpan.textContent = '処理中...（数秒かかります）';
-      statusSpan.style.color = 'blue';
-
-      try {
-        const response = await fetch(GAS_API_URL, {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'addStation',
-            station: stationName
-          })
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          statusSpan.textContent = '✅ 完了！';
-          statusSpan.style.color = 'green';
-          document.getElementById('newStationInput').value = '';
-          setTimeout(() => location.reload(), 1500);
-        } else {
-          statusSpan.textContent = '❌ エラー: ' + (result.error || '不明');
-          statusSpan.style.color = 'red';
-        }
-      } catch (error) {
-        statusSpan.textContent = '❌ エラー: ' + error.message;
-        statusSpan.style.color = 'red';
-      }
-    }
-
-    async function loadStationList() {
-      const listDiv = document.getElementById('stationList');
-      listDiv.innerHTML = '<p>読み込み中...</p>';
-
-      // 公開CSVから駅一覧を取得（fare Dataから重複除去）
-      const uniqueStations = [...new Set(fareData.map(item => item.to))];
-
-      listDiv.innerHTML = '';
-      uniqueStations.forEach(station => {
-        const div = document.createElement('div');
-        div.style.padding = '0.5em';
-        div.style.margin = '0.3em 0';
-        div.style.background = 'white';
-        div.style.border = '1px solid #ddd';
-        div.style.borderRadius = '4px';
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = '削除';
-        deleteBtn.style.background = '#dc3545';
-        deleteBtn.style.color = 'white';
-        deleteBtn.style.padding = '0.3em 0.6em';
-        deleteBtn.style.fontSize = '0.9em';
-        deleteBtn.style.marginRight = '0.5em';
-        deleteBtn.onclick = () => deleteStationViaGAS(station);
-
-        div.appendChild(deleteBtn);
-        div.appendChild(document.createTextNode(station));
-        listDiv.appendChild(div);
-      });
-    }
-
-    async function deleteStationViaGAS(stationName) {
-      if (!confirm(`"${stationName}" を削除しますか？\n\n⚠️ Google Sheetsからもすべて削除されます。`)) {
-        return;
-      }
-
-      if (GAS_API_URL === 'YOUR_GAS_DEPLOYMENT_URL_HERE') {
-        alert('Google Apps ScriptのデプロイURLを設定してください。');
-        return;
-      }
-
-      try {
-        const response = await fetch(GAS_API_URL, {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'deleteStation',
-            station: stationName
-          })
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          alert('✅ 削除しました。ページを再読み込みします。');
-          location.reload();
-        } else {
-          alert('❌ エラー: ' + (result.error || '不明'));
-        }
-      } catch (error) {
-        alert('エラー: ' + error.message);
-      }
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
     }
   </script>
 </body>
