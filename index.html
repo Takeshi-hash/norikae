@@ -167,6 +167,7 @@
       complete: function (results) {
         fareData = results.data.map(row => ({
           area: row["エリア"] || 'その他',
+          yomi: row["よみ"] || '',
           to: row["到着"],
           fare: Number(row["片道"]),
           facility: (row["主要な施設"] || "").replace(/^（|）$/g, '')
@@ -197,17 +198,19 @@
 
       // ソート実行
       const sortedData = [...fareData].sort((a, b) => {
+        const valA = a.yomi || a.to;
+        const valB = b.yomi || b.to;
         if (sortOrder === 'area') {
           const pA = areaPriority.indexOf(a.area);
           const pB = areaPriority.indexOf(b.area);
           const weightA = pA === -1 ? 999 : pA;
           const weightB = pB === -1 ? 999 : pB;
           if (weightA !== weightB) return weightA - weightB;
-          return a.to.localeCompare(b.to, 'ja');
+          return valA.localeCompare(valB, 'ja');
         } else if (sortOrder === 'name_asc') {
-          return a.to.localeCompare(b.to, 'ja');
+          return valA.localeCompare(valB, 'ja');
         } else if (sortOrder === 'name_desc') {
-          return b.to.localeCompare(a.to, 'ja');
+          return valB.localeCompare(valA, 'ja');
         }
         return 0;
       });

@@ -4,7 +4,7 @@ import { GoogleAuth } from 'google-auth-library';
 /**
  * Google Sheetに行を追加する
  * @param {string} spreadsheetId
- * @param {Array<string|number>} rowData [エリア, 路線, 出発, 到着, 備考, 片道, 往復, 主要な施設, 作成日時]
+ * @param {Array<string|number>} rowData [エリア, よみ, 路線, 出発, 到着, 備考, 片道, 往復, 主要な施設, 作成日時]
  */
 export async function appendRow(spreadsheetId, rowData) {
     const auth = new GoogleAuth({
@@ -70,7 +70,7 @@ export async function deleteRowsByDestination(spreadsheetId, destination) {
         // 1. シート全体のデータを取得
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: `${SHEET_NAME}!A:I`,
+            range: `${SHEET_NAME}!A:J`,
         });
 
         const rows = response.data.values;
@@ -82,8 +82,8 @@ export async function deleteRowsByDestination(spreadsheetId, destination) {
         // 2. 削除対象の行番号を特定
         const rowsToDelete = [];
         rows.forEach((row, index) => {
-            // row[3] が「到着」列（0-indexed で 3番目、Aがエリアになったため）
-            if (row[3] === destination) {
+            // row[4] が「到着」列
+            if (row[4] === destination) {
                 rowsToDelete.push(index);
             }
         });

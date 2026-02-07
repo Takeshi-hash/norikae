@@ -41,13 +41,13 @@ async function getRoutes() {
 // 経路追加API
 app.post('/api/routes', async (req, res) => {
     try {
-        const { toStation, routeName, area } = req.body;
+        const { toStation, routeName, area, yomi } = req.body;
 
         if (!toStation) {
             return res.status(400).json({ error: 'Station name is required' });
         }
 
-        console.log(`Received request to add route: ${toStation} (Area: ${area})`);
+        console.log(`Received request to add route: ${toStation} (Area: ${area}, Yomi: ${yomi})`);
 
         const routes = await getRoutes();
         const id = `route_${Date.now()}`;
@@ -59,6 +59,7 @@ app.post('/api/routes', async (req, res) => {
             from: '根岸',
             to: toStation,
             area: area || 'その他',
+            yomi: yomi || '',
             datetime_type: 'departure'
         };
 

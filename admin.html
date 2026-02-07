@@ -119,6 +119,10 @@
             <input type="text" id="newStationName" placeholder="例: 品川">
         </label>
         <label>
+            よみ（ひらがな）：
+            <input type="text" id="newYomi" placeholder="例: しながわ">
+        </label>
+        <label>
             エリア：
             <select id="newArea">
                 <option value="主要ターミナル">主要ターミナル</option>
@@ -211,12 +215,13 @@
 
         function addNewRoute() {
             const station = document.getElementById('newStationName').value.trim();
+            const yomi = document.getElementById('newYomi').value.trim();
             const routeName = document.getElementById('newRouteName').value.trim();
             const area = document.getElementById('newArea').value;
             const statusSpan = document.getElementById('addStatus');
 
-            if (!station) {
-                alert('到着駅を入力してください');
+            if (!station || !yomi) {
+                alert('到着駅とよみを入力してください');
                 return;
             }
 
@@ -226,7 +231,12 @@
             fetch('/api/routes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ toStation: station, routeName: routeName, area: area })
+                body: JSON.stringify({
+                    toStation: station,
+                    routeName: routeName,
+                    area: area,
+                    yomi: yomi
+                })
             })
                 .then(res => res.json())
                 .then(data => {
@@ -235,6 +245,7 @@
                         statusSpan.style.color = 'green';
                         // フォームクリア
                         document.getElementById('newStationName').value = '';
+                        document.getElementById('newYomi').value = '';
                         document.getElementById('newRouteName').value = '';
                         // 一覧更新
                         setTimeout(() => {

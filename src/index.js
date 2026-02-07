@@ -99,6 +99,7 @@ async function main() {
                 const roundTripFare = fare * 2;
                 const rowData = [
                     route.area || 'その他', // エリア
+                    route.yomi || '',       // よみ
                     route.route_name.split(':')[0], // 路線
                     route.from,       // 出発
                     route.to,         // 到着
