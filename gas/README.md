@@ -33,7 +33,7 @@
 const GAS_API_URL = "YOUR_GAS_DEPLOYMENT_URL_HERE";
 ```
 
-3. コピーしたURLに置き換え
+1. コピーしたURLに置き換え
 2. Gitにコミット＆プッシュ
 
 ## 5. テスト
