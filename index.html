@@ -261,7 +261,6 @@
       try {
         const response = await fetch(GAS_API_URL, {
           method: 'POST',
-          mode: 'no-cors', // CORS回避（レスポンスは読めないが、処理は実行される）
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'addStation',
@@ -269,12 +268,16 @@
           })
         });
 
-        // no-corsの場合、レスポンスが読めないため、5秒待ってからリロード
-        setTimeout(() => {
-          statusSpan.textContent = '✅ 完了！ページを再読み込みします...';
+        const result = await response.json();
+        if (result.success) {
+          statusSpan.textContent = '✅ 完了！';
           statusSpan.style.color = 'green';
+          document.getElementById('newStationInput').value = '';
           setTimeout(() => location.reload(), 1500);
-        }, 5000);
+        } else {
+          statusSpan.textContent = '❌ エラー: ' + (result.error || '不明');
+          statusSpan.style.color = 'red';
+        }
       } catch (error) {
         statusSpan.textContent = '❌ エラー: ' + error.message;
         statusSpan.style.color = 'red';
@@ -323,9 +326,8 @@
       }
 
       try {
-        await fetch(GAS_API_URL, {
+        const response = await fetch(GAS_API_URL, {
           method: 'POST',
-          mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'deleteStation',
@@ -333,11 +335,13 @@
           })
         });
 
-        // 5秒待ってからリロード
-        setTimeout(() => {
-          alert('削除しました。ページを再読み込みします。');
+        const result = await response.json();
+        if (result.success) {
+          alert('✅ 削除しました。ページを再読み込みします。');
           location.reload();
-        }, 3000);
+        } else {
+          alert('❌ エラー: ' + (result.error || '不明'));
+        }
       } catch (error) {
         alert('エラー: ' + error.message);
       }

@@ -2,8 +2,21 @@
 // デプロイ方法: 拡張機能 → Apps Script → 新しいプロジェクト → このコードを貼り付け → デプロイ
 
 // スプレッドシートID（.envから取得していたものをここに直接記述）
-const SPREADSHEET_ID = '1Rsk1IH9U_3J2LJlHfE2_RWbNLGrQ1fFGq7_BjcbJx-U';
+const SPREADSHEET_ID = '10_YVIh9LJ-vZd-H__5vHveIoSQRe4XI5KGY2-9Iy3No';
 const SHEET_NAME = 'シート1';
+
+/**
+ * OPTIONS リクエスト処理（CORS preflight）
+ */
+function doOptions(e) {
+  return ContentService
+    .createTextOutput('')
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader('Access-Control-Allow-Origin', '*')
+    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type')
+    .setHeader('Access-Control-Max-Age', '86400');
+}
 
 /**
  * GETリクエスト処理
@@ -206,7 +219,6 @@ function fetchFareFromJorudan(from, to) {
 function createResponse(data, statusCode = 200) {
   const output = ContentService.createTextOutput(JSON.stringify(data));
   output.setMimeType(ContentService.MimeType.JSON);
-  
-  // CORS ヘッダー設定
+  output.setHeader('Access-Control-Allow-Origin', '*');
   return output;
 }
