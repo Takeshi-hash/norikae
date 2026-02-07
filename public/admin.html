@@ -103,6 +103,14 @@
     <h1>🔧 交通費ツール管理画面</h1>
     <p style="color: #666;">駅の追加・削除を行います。普段の利用は <a href="index.html">index.html</a> をブックマークしてご利用ください。</p>
 
+    <!-- サーバー終了ボタン -->
+    <div style="margin: 1em 0;">
+        <button onclick="shutdownServer()"
+            style="background: #6c757d; color: white; padding: 0.5em 1em; border: none; border-radius: 4px; cursor: pointer;">
+            🛑 作業完了・サーバー終了
+        </button>
+    </div>
+
     <!-- 新規駅追加 -->
     <div class="section">
         <h2>➕ 新規駅を追加</h2>
@@ -249,6 +257,22 @@
                 .catch(err => {
                     alert('❌ 通信エラー');
                     console.error(err);
+                });
+        }
+
+        function shutdownServer() {
+            if (!confirm('サーバーを終了しますか？\n\n作業が完了したら「OK」を押してください。')) {
+                return;
+            }
+
+            fetch('/api/shutdown', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    alert('✅ サーバーを終了しました。\nこのタブを閉じてください。');
+                })
+                .catch(err => {
+                    // サーバーが終了するとエラーになるが、これは正常
+                    alert('✅ サーバーを終了しました。\nこのタブを閉じてください。');
                 });
         }
     </script>

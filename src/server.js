@@ -19,6 +19,13 @@ app.use(express.json());
 // P0: 公開ディレクトリを限定（credentials.json, .env などが公開されないようにする）
 app.use(express.static(PUBLIC_DIR));
 
+// サーバー終了エンドポイント
+app.post('/api/shutdown', (req, res) => {
+    res.json({ success: true, message: 'サーバーを終了します...' });
+    console.log('Shutdown requested. Closing server...');
+    setTimeout(() => process.exit(0), 500);
+});
+
 const ROUTES_FILE = path.join(ROOT_DIR, 'routes.json');
 
 // 既存のroutes.jsonを読み込む
