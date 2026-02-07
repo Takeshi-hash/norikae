@@ -115,26 +115,35 @@
     <div class="section">
         <h2>➕ 新規駅を追加</h2>
         <label>
-            到着駅：
+            到着駅名：
             <input type="text" id="newStationName" placeholder="例: 品川">
         </label>
-        <label>
-            よみ（ひらがな）：
-            <input type="text" id="newYomi" placeholder="例: しながわ">
-        </label>
-        <label>
-            エリア：
-            <select id="newArea">
-                <option value="主要ターミナル">主要ターミナル</option>
-                <option value="渋谷・新宿・池袋">渋谷・新宿・池袋</option>
-                <option value="港区（赤坂・六本木・麻布）">港区（赤坂・六本木・麻布）</option>
-                <option value="千代田・中央オフィス街">千代田・中央オフィス街</option>
-                <option value="中央線・文京エリア">中央線・文京エリア</option>
-                <option value="湾岸エリア">湾岸エリア</option>
-                <option value="その他" selected>その他</option>
-            </select>
-        </label>
-        <button onclick="addNewRoute()">追加して更新</button>
+
+        <!-- 詳細設定（通常は入力不要） -->
+        <details style="margin: 1em 0; color: #666;">
+            <summary style="cursor: pointer; font-size: 0.9em;">詳細設定（よみがな・エリア）</summary>
+            <div style="padding: 1em; background: #eee; margin-top: 0.5em; border-radius: 4px;">
+                <label>
+                    よみ（ひらがな）：
+                    <input type="text" id="newYomi" placeholder="空欄ならAIが自動設定">
+                </label>
+                <label>
+                    エリア：
+                    <select id="newArea">
+                        <option value="">（AIによる自動判定）</option>
+                        <option value="主要ターミナル">主要ターミナル</option>
+                        <option value="渋谷・新宿・池袋">渋谷・新宿・池袋</option>
+                        <option value="港区（赤坂・六本木・麻布）">港区（赤坂・六本木・麻布）</option>
+                        <option value="千代田・中央オフィス街">千代田・中央オフィス街</option>
+                        <option value="中央線・文京エリア">中央線・文京エリア</option>
+                        <option value="湾岸エリア">湾岸エリア</option>
+                        <option value="その他">その他</option>
+                    </select>
+                </label>
+            </div>
+        </details>
+
+        <button onclick="addNewRoute()">運賃を自動取得して追加</button>
         <span id="addStatus"></span>
         <p style="margin-top: 1em; font-size: 0.9em; color: #888;">
             ℹ️ ジョルダンから運賃を取得し、Google Sheetsに記録します（10秒程度かかります）
@@ -220,12 +229,12 @@
             const area = document.getElementById('newArea').value;
             const statusSpan = document.getElementById('addStatus');
 
-            if (!station || !yomi) {
-                alert('到着駅とよみを入力してください');
+            if (!station) {
+                alert('到着駅名を入力してください');
                 return;
             }
 
-            statusSpan.textContent = '処理中...（10秒ほどかかります）';
+            statusSpan.textContent = '運賃を取得中...（10秒ほどかかります）';
             statusSpan.style.color = 'blue';
 
             fetch('/api/routes', {

@@ -58,7 +58,7 @@ app.post('/api/routes', async (req, res) => {
             route_name: `${prefix}: 根岸-${toStation}`,
             from: '根岸',
             to: toStation,
-            area: area || 'その他',
+            area: area || '未分類（AI補完待ち）',
             yomi: yomi || '',
             datetime_type: 'departure'
         };

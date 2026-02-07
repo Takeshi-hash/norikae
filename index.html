@@ -173,6 +173,9 @@
           facility: (row["主要な施設"] || "").replace(/^（|）$/g, '')
         })).filter(item => item.to && !isNaN(item.fare));
 
+        const savedSort = localStorage.getItem('norikae_sort_order');
+        if (savedSort) document.getElementById('sortOrder').value = savedSort;
+
         setupSelect();
       },
       error: function (error) {
@@ -184,6 +187,7 @@
     function setupSelect() {
       const select = document.getElementById('toStation');
       const sortOrder = document.getElementById('sortOrder').value;
+      localStorage.setItem('norikae_sort_order', sortOrder);
       const currentVal = select.value;
 
       const areaPriority = [
