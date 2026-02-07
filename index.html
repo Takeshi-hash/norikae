@@ -1,19 +1,75 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
-  <title>交通費計算ツール（CSVパース強化版）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>根岸発 交通費計算ツール</title>
   <style>
-    body { font-family: sans-serif; padding: 2em; }
-    label, select, input { margin: 0.5em 0; }
-    .row { margin-bottom: 1em; }
-    .facility { color: #555; font-size: 0.9em; }
+    body {
+      font-family: sans-serif;
+      padding: 1em;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.5em;
+      margin-bottom: 1em;
+    }
+
+    label,
+    select,
+    input {
+      margin: 0.5em 0;
+    }
+
+    .row {
+      margin-bottom: 1em;
+    }
+
+    .facility {
+      color: #555;
+      font-size: 0.9em;
+    }
+
+    button {
+      padding: 0.5em 1em;
+      font-size: 1em;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .route-item {
+      padding: 0.5em;
+      margin: 0.5em 0;
+      background: #f8f9fa;
+      border-left: 3px solid #007bff;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 0.5em;
+      }
+
+      h1 {
+        font-size: 1.2em;
+      }
+    }
   </style>
   <!-- PapaParseのCDN（CSVパーサ） -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
 </head>
+
 <body>
-  <h1>根岸発 交通費計算ツール（スプレッドシートCSV対応）</h1>
+  <h1>根岸発 交通費計算ツール</h1>
   <div class="row">
     <label>到着駅：
       <select id="toStation"></select>
@@ -28,33 +84,41 @@
     </label>
   </div>
   <div class="row facility" id="facilityInfo"></div>
+
   <div class="row">
     <button onclick="addRoute()">区間を追加</button>
   </div>
   <div id="routes"></div>
   <div class="row">
     <strong>合計（片道）：<span id="totalFare">0</span> 円　
-    合計（往復）：<span id="totalRoundFare">0</span> 円</strong>
+      合計（往復）：<span id="totalRoundFare">0</span> 円</strong>
   </div>
 
   <script>
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRn6vLUs2FmbnirI0FT8gmbMjdA54nVSH9tEKogcfQjS-4LEKAwNeXpC0xp9TXMtinJol4naC04DXy1/pub?gid=0&single=true&output=csv";
     let fareData = [];
     let routeList = [];
 
-    fetch(CSV_URL)
-      .then(response => response.text())
-      .then(text => {
-        // PapaParseで解析
-        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
-        // ["路線","出発","到着","","片道","主要な施設"]
-        fareData = parsed.data.map(row => ({
+    // Google Sheets公開CSVを直接読み込み
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQGEHOeXmRZ9ozOakzu76h3e2c8TaA7e8p8wTTpRy_NkwoKhqBNXk1joES3kfZR9xWOp-u2o3CVJ8nx/pub?gid=0&single=true&output=csv";
+
+    Papa.parse(CSV_URL, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: function (results) {
+        fareData = results.data.map(row => ({
           to: row["到着"],
           fare: Number(row["片道"]),
           facility: (row["主要な施設"] || "").replace(/^（|）$/g, '')
         })).filter(item => item.to && !isNaN(item.fare));
+
         setupSelect();
-      });
+      },
+      error: function (error) {
+        console.error('CSV読み込みエラー:', error);
+        alert('データの読み込みに失敗しました。');
+      }
+    });
 
     function setupSelect() {
       const select = document.getElementById('toStation');
@@ -112,7 +176,7 @@
         alert("到着駅と金額を入力してください。");
         return;
       }
-      const facility = (station === "other") ? "" : 
+      const facility = (station === "other") ? "" :
         (fareData.find(item => item.to === station) || {}).facility || "";
       routeList.push({ to: station, fare: fare, roundFare: roundFare, facility: facility });
       updateRoutes();
@@ -141,4 +205,5 @@
     }
   </script>
 </body>
+
 </html>

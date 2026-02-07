@@ -1,0 +1,25 @@
+# 機密情報
+.env
+credentials.json
+
+# ログファイル
+*.log
+
+# Node modules
+node_modules/
+
+# ビルド成果物
+dist/
+build/
+
+# OS固有
+.DS_Store
+Thumbs.db
+
+# 一時ファイル
+history.json
+routes.json
+fare_data.js
+
+# ローカル専用
+*_local*
